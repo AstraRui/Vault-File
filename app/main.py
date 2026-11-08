@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
+# Запас на служебные накладные расходы multipart/form-data (границы, заголовки частей):
+# Content-Length всего запроса больше, чем просто вес файла внутри него.
+_REQUEST_OVERHEAD_BYTES = 64 * 1024
+
 TAGS_METADATA = [
     {
         "name": "secrets",
@@ -69,11 +73,17 @@ async def limit_request_size(request: Request, call_next: Callable[[Request], Aw
     """
     content_length = request.headers.get("content-length")
     if content_length is not None:
-        settings = get_settings()
-        max_bytes = settings.max_file_size_mb * 1024 * 1024
-        if int(content_length) > max_bytes:
-            exc = PayloadTooLargeError(settings.max_file_size_mb)
-            return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+        try:
+            declared_size = int(content_length)
+        except ValueError:
+            declared_size = None  # невалидный заголовок — не наша забота, пропускаем дальше
+
+        if declared_size is not None:
+            settings = get_settings()
+            max_bytes = settings.max_file_size_mb * 1024 * 1024 + _REQUEST_OVERHEAD_BYTES
+            if declared_size > max_bytes:
+                exc = PayloadTooLargeError(settings.max_file_size_mb)
+                return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
     return await call_next(request)
 
 

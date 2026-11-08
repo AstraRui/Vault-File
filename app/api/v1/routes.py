@@ -42,7 +42,8 @@ async def create_file_secret(
         if len(chunks) > max_bytes:
             raise PayloadTooLargeError(settings.max_file_size_mb)
 
-    secret_id, ttl = await service.create_file_secret(file.filename, bytes(chunks), ttl_seconds)
+    filename = file.filename or "secret"
+    secret_id, ttl = await service.create_file_secret(filename, bytes(chunks), ttl_seconds)
     return SecretCreatedResponse(id=secret_id, ttl_seconds=ttl)
 
 

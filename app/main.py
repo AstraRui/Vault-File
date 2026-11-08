@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -14,10 +14,30 @@ from app.core.crypto import get_crypto_service
 from app.core.exceptions import AppError, PayloadTooLargeError
 from app.core.logging import setup_logging
 from app.repositories.secret_repository import get_secret_repository
+from app.schemas.health import HealthResponse
 
 logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+TAGS_METADATA = [
+    {
+        "name": "secrets",
+        "description": "Создание и одноразовое чтение зашифрованных секретов (текст и файлы).",
+    },
+    {
+        "name": "health",
+        "description": "Проверка работоспособности сервиса и доступности Redis.",
+    },
+]
+
+APP_DESCRIPTION = """
+Микросервис одноразовых зашифрованных ссылок (аналог Mozilla Send).
+
+Текст и файлы шифруются на бэкенде одним и тем же ключом (Fernet) и хранятся
+в Redis. Чтение — атомарная операция **GETDEL**: ссылка физически не может
+быть открыта дважды. Дополнительно запись уничтожается по истечении TTL.
+"""
 
 
 @asynccontextmanager
@@ -33,8 +53,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="File Vault",
-    description="Микросервис одноразовых зашифрованных ссылок",
+    description=APP_DESCRIPTION,
     version="0.1.0",
+    openapi_tags=TAGS_METADATA,
     lifespan=lifespan,
 )
 
@@ -82,6 +103,22 @@ app.include_router(secrets_router, prefix="/api/v1")
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> Response:
     return Response(status_code=204)
+
+
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["health"],
+    responses={503: {"description": "Redis недоступен"}},
+)
+async def health_check() -> HealthResponse:
+    try:
+        await get_secret_repository().ping()
+    except Exception as exc:
+        logger.error("Health check failed: Redis unreachable (%s)", exc)
+        raise HTTPException(status_code=503, detail="Redis недоступен") from exc
+
+    return HealthResponse(status="ok", redis="ok")
 
 
 # Монтируется последним: API-роуты выше по приоритету, всё остальное отдаёт статику фронтенда

@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class SecretKind(str, Enum):
+class SecretKind(StrEnum):
     TEXT = "text"
     FILE = "file"
 

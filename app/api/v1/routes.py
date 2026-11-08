@@ -4,6 +4,8 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import Response
 
+from app.core.config import Settings, get_settings
+from app.core.exceptions import PayloadTooLargeError
 from app.schemas.secret import (
     CreateSecretRequest,
     SecretContentResponse,
@@ -11,6 +13,8 @@ from app.schemas.secret import (
     SecretKind,
 )
 from app.services.secret_service import SecretService, get_secret_service
+
+_UPLOAD_CHUNK_SIZE = 1024 * 1024
 
 router = APIRouter(prefix="/secrets", tags=["secrets"])
 
@@ -29,13 +33,35 @@ async def create_file_secret(
     file: UploadFile = File(...),
     ttl_seconds: int | None = Form(None),
     service: SecretService = Depends(get_secret_service),
+    settings: Settings = Depends(get_settings),
 ) -> SecretCreatedResponse:
-    content = await file.read()
-    secret_id, ttl = await service.create_file_secret(file.filename, content, ttl_seconds)
+    max_bytes = settings.max_file_size_mb * 1024 * 1024
+    chunks = bytearray()
+    while chunk := await file.read(_UPLOAD_CHUNK_SIZE):
+        chunks.extend(chunk)
+        if len(chunks) > max_bytes:
+            raise PayloadTooLargeError(settings.max_file_size_mb)
+
+    secret_id, ttl = await service.create_file_secret(file.filename, bytes(chunks), ttl_seconds)
     return SecretCreatedResponse(id=secret_id, ttl_seconds=ttl)
 
 
-@router.get("/{secret_id}", response_model=None)
+@router.get(
+    "/{secret_id}",
+    response_model=None,
+    responses={
+        200: {
+            "description": (
+                "Текстовый секрет возвращается как JSON (SecretContentResponse); "
+                "файл — как бинарное содержимое с заголовком Content-Disposition."
+            ),
+            "content": {
+                "application/json": {"schema": SecretContentResponse.model_json_schema()},
+                "application/octet-stream": {"schema": {"type": "string", "format": "binary"}},
+            },
+        },
+    },
+)
 async def read_secret(
     secret_id: str,
     service: SecretService = Depends(get_secret_service),

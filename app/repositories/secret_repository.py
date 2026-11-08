@@ -22,6 +22,9 @@ class SecretRepository:
     async def get_and_delete(self, secret_id: str) -> bytes | None:
         return await self._client.getdel(secret_id)
 
+    async def ping(self) -> None:
+        await self._client.ping()
+
     async def close(self) -> None:
         await self._client.aclose()
 

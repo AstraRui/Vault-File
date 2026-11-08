@@ -43,6 +43,12 @@ attachBtn.addEventListener("click", () => fileInput.click());
 fileInput.addEventListener("change", () => setFile(fileInput.files[0] || null));
 fileClearBtn.addEventListener("click", () => setFile(null));
 
+contentInput.addEventListener("keydown", (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+    form.requestSubmit();
+  }
+});
+
 function showError(message) {
   errorBox.textContent = message;
   errorBox.classList.remove("d-none");

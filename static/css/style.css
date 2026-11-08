@@ -112,6 +112,12 @@ body {
   box-shadow: none;
 }
 
+.btn-attach:focus-visible,
+.ttl-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.35);
+}
+
 /* Файловый чип */
 .file-pill {
   display: inline-flex;
@@ -180,4 +186,10 @@ body {
 .btn-copy:hover {
   background-color: #27272a;
   color: var(--bs-body-color);
+}
+
+/* Мягкое предупреждение под danger-палитру Zinc */
+.alert-danger-soft {
+  background-color: #3f191f;
+  color: #fecdd3;
 }

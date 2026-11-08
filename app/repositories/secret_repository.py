@@ -1,8 +1,12 @@
+import logging
 from functools import lru_cache
 
 import redis.asyncio as redis
+from redis.exceptions import RedisError
 
 from app.core.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class SecretRepository:
@@ -17,10 +21,18 @@ class SecretRepository:
         self._client = client
 
     async def save(self, secret_id: str, encrypted_data: bytes, ttl_seconds: int) -> None:
-        await self._client.set(secret_id, encrypted_data, ex=ttl_seconds)
+        try:
+            await self._client.set(secret_id, encrypted_data, ex=ttl_seconds)
+        except RedisError:
+            logger.error("Redis недоступен при сохранении секрета %s", secret_id)
+            raise
 
     async def get_and_delete(self, secret_id: str) -> bytes | None:
-        return await self._client.getdel(secret_id)
+        try:
+            return await self._client.getdel(secret_id)
+        except RedisError:
+            logger.error("Redis недоступен при чтении секрета %s", secret_id)
+            raise
 
     async def ping(self) -> None:
         await self._client.ping()

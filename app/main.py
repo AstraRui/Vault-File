@@ -80,7 +80,19 @@ async def limit_request_size(request: Request, call_next: Callable[[Request], Aw
 @app.middleware("http")
 async def log_requests(request: Request, call_next: Callable[[Request], Awaitable]):
     start = time.monotonic()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        # С двумя наложенными @app.middleware("http") Starlette иногда не даёт
+        # этому call_next вернуть уже обработанный exception_handler'ом ответ —
+        # исключение всплывает и сюда. Фиксируем сам факт сбоя и даём ему пройти
+        # дальше: унести его в тишину — значит потерять запись о сбойном запросе.
+        duration_ms = (time.monotonic() - start) * 1000
+        logger.error(
+            "%s %s -> исключение после %.1f ms", request.method, request.url.path, duration_ms
+        )
+        raise
+
     duration_ms = (time.monotonic() - start) * 1000
     logger.info(
         "%s %s -> %s (%.1f ms)",
@@ -95,6 +107,17 @@ async def log_requests(request: Request, call_next: Callable[[Request], Awaitabl
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Последний рубеж: любое необработанное исключение (обрыв Redis, баг и т.п.)
+    логируется с полным traceback и не просачивается клиенту как есть.
+    """
+    logger.critical(
+        "Необработанное исключение на %s %s", request.method, request.url.path, exc_info=exc
+    )
+    return JSONResponse(status_code=500, content={"detail": "Внутренняя ошибка сервера"})
 
 
 app.include_router(secrets_router, prefix="/api/v1")

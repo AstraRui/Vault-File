@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root, [data-bs-theme="dark"] {
+  /* Базовые цвета в стиле Zinc/Slate */
+  --bs-body-bg: #09090b;
+  --bs-body-color: #fafafa;
+  --bs-secondary-color: #a1a1aa;
+  --bs-border-color: #27272a;
+
+  /* Акцентный цвет (индиго) */
+  --bs-primary: #6366f1;
+  --bs-primary-rgb: 99, 102, 241;
+
+  --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--bs-font-sans-serif);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bs-body-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Композитный блок (Поле ввода + Тулбар) */
+.editor-container {
+  background-color: #18181b;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.editor-container:focus-within {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.form-control-plain {
+  background-color: transparent;
+  border: none;
+  color: var(--bs-body-color);
+  padding: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.form-control-plain:focus {
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--bs-body-color);
+}
+
+.form-control-plain::placeholder {
+  color: #52525b;
+}
+
+.form-control-plain:disabled {
+  background-color: transparent;
+  color: #52525b;
+}
+
+/* Тулбар под полем ввода */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--bs-border-color);
+  background-color: #121214;
+}
+
+/* Кнопка прикрепления */
+.btn-attach {
+  color: var(--bs-secondary-color);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.btn-attach:hover {
+  color: var(--bs-body-color);
+  background-color: #27272a;
+}
+
+/* Селект времени */
+.ttl-select {
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--bs-secondary-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.375rem 2rem 0.375rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ttl-select:hover {
+  color: var(--bs-body-color);
+}
+
+.ttl-select:focus {
+  border-color: var(--bs-border-color);
+  box-shadow: none;
+}
+
+/* Файловый чип */
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #27272a;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--bs-body-color);
+}
+
+.file-pill .btn-close {
+  font-size: 0.5rem;
+  opacity: 0.7;
+}
+
+/* Основная кнопка */
+.btn-primary {
+  --bs-btn-bg: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: #4f46e5;
+  --bs-btn-hover-border-color: #4f46e5;
+  --bs-btn-active-bg: #4338ca;
+  font-weight: 500;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+}
+
+/* Поле с результатом */
+.result-box {
+  background-color: #18181b;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.result-input-group {
+  background-color: #09090b;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#result-link {
+  background-color: transparent;
+  border: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  color: var(--bs-primary);
+}
+
+#result-link:focus {
+  box-shadow: none;
+}
+
+.btn-copy {
+  border: none;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  padding: 0.5rem 1rem;
+  border-left: 1px solid var(--bs-border-color);
+  border-radius: 0;
+}
+
+.btn-copy:hover {
+  background-color: #27272a;
+  color: var(--bs-body-color);
+}

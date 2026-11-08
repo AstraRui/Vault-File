@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends
+import base64
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi.responses import Response
 
 from app.schemas.secret import (
     CreateSecretRequest,
@@ -12,7 +16,7 @@ router = APIRouter(prefix="/secrets", tags=["secrets"])
 
 
 @router.post("", response_model=SecretCreatedResponse, status_code=201)
-async def create_secret(
+async def create_text_secret(
     payload: CreateSecretRequest,
     service: SecretService = Depends(get_secret_service),
 ) -> SecretCreatedResponse:
@@ -20,10 +24,31 @@ async def create_secret(
     return SecretCreatedResponse(id=secret_id, ttl_seconds=ttl)
 
 
-@router.get("/{secret_id}", response_model=SecretContentResponse)
+@router.post("/file", response_model=SecretCreatedResponse, status_code=201)
+async def create_file_secret(
+    file: UploadFile = File(...),
+    ttl_seconds: int | None = Form(None),
+    service: SecretService = Depends(get_secret_service),
+) -> SecretCreatedResponse:
+    content = await file.read()
+    secret_id, ttl = await service.create_file_secret(file.filename, content, ttl_seconds)
+    return SecretCreatedResponse(id=secret_id, ttl_seconds=ttl)
+
+
+@router.get("/{secret_id}", response_model=None)
 async def read_secret(
     secret_id: str,
     service: SecretService = Depends(get_secret_service),
-) -> SecretContentResponse:
-    content = await service.read_text_secret(secret_id)
-    return SecretContentResponse(kind=SecretKind.TEXT, content=content)
+) -> SecretContentResponse | Response:
+    envelope = await service.read_secret(secret_id)
+
+    if envelope["kind"] == SecretKind.FILE.value:
+        raw_content = base64.b64decode(envelope["content_b64"])
+        encoded_filename = quote(envelope["filename"])
+        return Response(
+            content=raw_content,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"},
+        )
+
+    return SecretContentResponse(kind=SecretKind.TEXT, content=envelope["content"])

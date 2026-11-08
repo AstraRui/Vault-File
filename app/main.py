@@ -2,9 +2,11 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.routes import router as secrets_router
 from app.core.config import get_settings
@@ -13,6 +15,8 @@ from app.core.logging import setup_logging
 from app.repositories.secret_repository import get_secret_repository
 
 logger = logging.getLogger(__name__)
+
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
 @asynccontextmanager
@@ -54,3 +58,6 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 
 
 app.include_router(secrets_router, prefix="/api/v1")
+
+# Монтируется последним: API-роуты выше по приоритету, всё остальное отдаёт статику фронтенда
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="frontend")

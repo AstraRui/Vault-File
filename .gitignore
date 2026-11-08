@@ -20,4 +20,5 @@ redis-data/
 # IDE
 .vscode/
 .idea/
+.claude/
 .DS_Store

@@ -1,0 +1,23 @@
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+venv/
+.venv/
+
+# Logs
+logs/
+*.log
+
+# Docker
+redis-data/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
